@@ -7,11 +7,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
-import com.nijikokun.register.Register;
-import com.nijikokun.register.payment.Method;
-import com.nijikokun.register.payment.Method.MethodAccount;
-import com.nijikokun.register.payment.Methods;
-
 /**
  * Stargate - A portal plugin for Bukkit
  * Copyright (C) 2011, 2012 Steven "Drakia" Scott <Contact@TheDgtl.net>
@@ -32,7 +27,6 @@ import com.nijikokun.register.payment.Methods;
 
 public class iConomyHandler {
 	public static boolean useiConomy = false;
-	public static Register register = null;
 	public static Vault vault = null;
 	public static Economy economy = null;
 	
@@ -47,19 +41,6 @@ public class iConomyHandler {
 		if (!useiConomy) return 0;
 		if (economy != null) {
 			return economy.getBalance(player);
-		}
-		if (register != null) {
-			Method method = Methods.getMethod();
-			if (method == null) {
-				return 0;
-			}
-			
-			MethodAccount acc = method.getAccount(player);
-			if (acc == null) {
-				Stargate.debug("ich::getBalance", "Error fetching Register account for " + player);
-				return 0;
-			}
-			return acc.balance();
 		}
 		return 0;
 	}
@@ -77,53 +58,18 @@ public class iConomyHandler {
 			}
 			return true;
 		}
-		
-		if (register != null) {
-			// Check for a payment method
-			Method method = Methods.getMethod();
-			if (method == null) {
-				return true;
-			}
-			// No point going from a player to themself
-			if (player.equals(target)) return true;
-			
-			MethodAccount acc = method.getAccount(player);
-			if (acc == null) {
-				Stargate.debug("ich::chargePlayer", "Error fetching Register account for " + player);
-				return false;
-			}
-			
-			if (!acc.hasEnough(amount)) return false;
-			acc.subtract(amount);
-			
-			if (target != null) {
-				MethodAccount tAcc = method.getAccount(target);
-				if (tAcc != null) {
-					tAcc.add(amount);
-				}
-			}
-			return true;
-		}
 		return true;
 	}
 	
 	public static boolean useiConomy() {
 		if (!useiConomy) return false;
 		if (economy != null) return true;
-		if (register != null && Methods.getMethod() != null) return true;
 		return false;
 	}
 	
 	public static String format(int amt) {
 		if (economy != null) {
 			return economy.format(amt);
-		}
-		if (register != null) {
-			Method method = Methods.getMethod();
-			if (method == null) {
-				return Integer.toString(amt);
-			}
-			return method.format(amt);
 		}
 		return "";
 	}
@@ -133,18 +79,12 @@ public class iConomyHandler {
 		// Check for Vault
 		Plugin p = pm.getPlugin("Vault");
 		if (p != null)
-			return setupVault(p);
-		// Check for Register
-		p = pm.getPlugin("Register");
-		if (p != null)
-			return setupRegister(p);
-		
+			return setupVault(p);	
 		return false;
 	}
 	
 	public static boolean setupVault(Plugin p) {
 		if (!useiConomy) return false;
-		if (register != null) return false;
 		if (p == null || !p.isEnabled()) return false;
 		if (!p.getDescription().getName().equals("Vault")) return false;
 		
@@ -157,20 +97,7 @@ public class iConomyHandler {
         return (economy != null);
 	}
 	
-	public static boolean setupRegister(Plugin p) {
-		if (!useiConomy) return false;
-		if (vault != null) return false;
-		if (p == null || !p.isEnabled()) return false;
-		if (!p.getDescription().getName().equals("Register")) return false;
-		register = (Register)p;
-		return true;
-	}
-	
 	public static boolean checkLost(Plugin p) {
-		if (p.equals(register)) {
-			register = null;
-			return true;
-		}
 		if (p.equals(vault)) {
 			economy = null;
 			vault = null;
